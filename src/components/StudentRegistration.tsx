@@ -17,9 +17,6 @@ interface StudentRegistrationProps {
   onOpenTeacherLogin: () => void;
 }
 
-const REGULAR_CLASSES = ['X-1', 'X-2', 'X-3', 'X-4', 'X-5', 'X-6', 'X-7', 'X-8', 'X-9', 'X-10'];
-const CAMBRIDGE_CLASSES = ['X Cambridge 1', 'X Cambridge 2', 'X Cambridge 3'];
-
 export const StudentRegistration: React.FC<StudentRegistrationProps> = ({
   onStartExam,
   onOpenTeacherLogin,
@@ -27,17 +24,8 @@ export const StudentRegistration: React.FC<StudentRegistrationProps> = ({
   const [name, setName] = useState('');
   const [studentId, setStudentId] = useState('');
   const [program, setProgram] = useState<ProgramType>('X');
-  const [selectedClass, setSelectedClass] = useState('X-1');
-  const [customClass, setCustomClass] = useState('');
   const [agreedTerms, setAgreedTerms] = useState(false);
   const [error, setError] = useState('');
-
-  const currentClassOptions = program === 'X' ? REGULAR_CLASSES : CAMBRIDGE_CLASSES;
-
-  const handleProgramChange = (newProgram: ProgramType) => {
-    setProgram(newProgram);
-    setSelectedClass(newProgram === 'X' ? 'X-1' : 'X Cambridge 1');
-  };
 
   const handleStart = (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,11 +35,6 @@ export const StudentRegistration: React.FC<StudentRegistrationProps> = ({
     }
     if (!studentId.trim()) {
       setError('Harap masukkan Nomor Absen atau NISN.');
-      return;
-    }
-    const finalClassName = selectedClass === 'CUSTOM' ? customClass.trim() : selectedClass;
-    if (!finalClassName) {
-      setError('Harap tentukan kelas Anda.');
       return;
     }
     if (!agreedTerms) {
@@ -64,7 +47,7 @@ export const StudentRegistration: React.FC<StudentRegistrationProps> = ({
       name: name.trim(),
       studentId: studentId.trim(),
       program,
-      className: finalClassName,
+      className: program === 'X Cambridge' ? 'X Cambridge' : 'Kelas X',
     });
   };
 
@@ -218,7 +201,7 @@ export const StudentRegistration: React.FC<StudentRegistrationProps> = ({
                   <div className="grid grid-cols-2 gap-3">
                     <button
                       type="button"
-                      onClick={() => handleProgramChange('X')}
+                      onClick={() => setProgram('X')}
                       className={`py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold transition-all border flex items-center justify-center gap-2 ${
                         program === 'X'
                           ? 'bg-blue-600 text-white border-blue-500 shadow-md shadow-blue-500/20'
@@ -229,7 +212,7 @@ export const StudentRegistration: React.FC<StudentRegistrationProps> = ({
                     </button>
                     <button
                       type="button"
-                      onClick={() => handleProgramChange('X Cambridge')}
+                      onClick={() => setProgram('X Cambridge')}
                       className={`py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold transition-all border flex items-center justify-center gap-2 ${
                         program === 'X Cambridge'
                           ? 'bg-indigo-600 text-white border-indigo-500 shadow-md shadow-indigo-500/20'
@@ -240,35 +223,6 @@ export const StudentRegistration: React.FC<StudentRegistrationProps> = ({
                       <span>X Cambridge</span>
                     </button>
                   </div>
-                </div>
-
-                {/* Class Dropdown */}
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                    Kelas yang Bersangkutan *
-                  </label>
-                  <select
-                    value={selectedClass}
-                    onChange={(e) => setSelectedClass(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
-                  >
-                    {currentClassOptions.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                    <option value="CUSTOM">Lainnya (Ketik Manual)...</option>
-                  </select>
-
-                  {selectedClass === 'CUSTOM' && (
-                    <input
-                      type="text"
-                      value={customClass}
-                      onChange={(e) => setCustomClass(e.target.value)}
-                      placeholder="Masukkan nama kelas Anda..."
-                      className="mt-2 w-full px-4 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-sm focus:outline-none focus:border-blue-500"
-                    />
-                  )}
                 </div>
 
                 {/* Anti-cheat Agreement Checkbox */}
