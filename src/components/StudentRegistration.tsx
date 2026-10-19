@@ -43,6 +43,18 @@ export const StudentRegistration: React.FC<StudentRegistrationProps> = ({
     }
 
     setError('');
+
+    // Trigger full screen when exam starts
+    try {
+      if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(() => {
+          // Ignore if user or browser cancels fullscreen
+        });
+      }
+    } catch (err) {
+      // safe fallback
+    }
+
     onStartExam({
       name: name.trim(),
       studentId: studentId.trim(),

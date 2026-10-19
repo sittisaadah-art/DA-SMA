@@ -26,6 +26,8 @@ import {
   FileEdit,
   Info,
   Check,
+  Maximize,
+  Minimize,
 } from 'lucide-react';
 
 interface ExamEngineProps {
@@ -59,6 +61,37 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ student, onComplete }) =
   const startTimeRef = useRef<string>(new Date().toISOString());
   const timerRef = useRef<any>(null);
   const lastBlurTimeRef = useRef<number>(0);
+
+  // Fullscreen state
+  const [isFullscreen, setIsFullscreen] = useState(Boolean(document.fullscreenElement));
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      }
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+  };
+
+  useEffect(() => {
+    const handleFsChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+    document.addEventListener('fullscreenchange', handleFsChange);
+
+    // Attempt fullscreen on mount if not yet active
+    if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    }
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFsChange);
+    };
+  }, []);
 
   // Helper to compile current submission state
   const buildSubmissionObject = useCallback(
@@ -215,6 +248,9 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ student, onComplete }) =
 
   const handleFinalSubmit = async (status: ExamStatus = 'SUBMITTED') => {
     if (timerRef.current) clearInterval(timerRef.current);
+    if (document.fullscreenElement && document.exitFullscreen) {
+      document.exitFullscreen().catch(() => {});
+    }
     setIsSubmitting(true);
     const finalSub = buildSubmissionObject(status);
     await apiService.saveSubmission(finalSub);
@@ -417,8 +453,21 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ student, onComplete }) =
             <span>{formatTimer(secondsRemaining)}</span>
           </div>
 
-          {/* Right: Violation badge & Submit button */}
+          {/* Right: Fullscreen, Violation badge & Submit button */}
           <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              onClick={toggleFullscreen}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl border text-[11px] font-semibold transition-colors ${
+                isFullscreen
+                  ? 'bg-slate-800/80 border-slate-700 text-slate-300 hover:text-white'
+                  : 'bg-indigo-600/30 border-indigo-500 text-indigo-300 animate-pulse'
+              }`}
+              title={isFullscreen ? 'Keluar Layar Penuh' : 'Mode Layar Penuh (Wajib)'}
+            >
+              {isFullscreen ? <Minimize className="w-3.5 h-3.5" /> : <Maximize className="w-3.5 h-3.5" />}
+              <span className="hidden sm:inline">{isFullscreen ? 'Layar Penuh' : 'Aktifkan Fullscreen'}</span>
+            </button>
+
             <div
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl border text-[11px] font-semibold ${
                 violations > 0
