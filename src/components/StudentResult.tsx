@@ -24,7 +24,7 @@ interface StudentResultProps {
 
 export const StudentResult: React.FC<StudentResultProps> = ({ submission, onRetake }) => {
   const [showLogDetails, setShowLogDetails] = useState(false);
-  const isPassing = submission.totalScore >= 75;
+  const isPassing = submission.totalScore >= 78;
 
   // Trigger confetti if passing
   useEffect(() => {
@@ -112,7 +112,7 @@ export const StudentResult: React.FC<StudentResultProps> = ({ submission, onReta
                   {submission.totalScore}
                 </div>
                 <div className="text-[11px] text-slate-500 font-medium">
-                  KKM: 75
+                  KKM: 78
                 </div>
               </div>
 

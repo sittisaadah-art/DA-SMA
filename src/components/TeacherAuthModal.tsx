@@ -49,9 +49,6 @@ export const TeacherAuthModal: React.FC<TeacherAuthModalProps> = ({ isOpen, onCl
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
-              PIN Pengajar (Default: guru123)
-            </label>
             <div className="relative">
               <input
                 type={showPin ? 'text' : 'password'}
@@ -78,7 +75,7 @@ export const TeacherAuthModal: React.FC<TeacherAuthModalProps> = ({ isOpen, onCl
             </div>
             {error && (
               <p className="text-red-600 text-xs mt-2 flex items-center gap-1 font-medium">
-                PIN yang Anda masukkan salah. Gunakan PIN: <span className="font-mono font-bold">guru123</span>
+                PIN yang Anda masukkan salah. Silakan periksa kembali.
               </p>
             )}
           </div>

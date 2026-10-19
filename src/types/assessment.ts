@@ -73,5 +73,5 @@ export interface ClassPerformance {
   averageScore: number;
   highestScore: number;
   lowestScore: number;
-  passingRate: number; // percentage >= 75
+  passingRate: number; // percentage >= 78
 }

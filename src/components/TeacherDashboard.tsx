@@ -28,6 +28,11 @@ import {
   ChevronRight,
   X,
   FileSpreadsheet,
+  Code,
+  Sparkles,
+  Check,
+  Layers,
+  HelpCircle,
 } from 'lucide-react';
 
 interface TeacherDashboardProps {
@@ -51,8 +56,9 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onLogout }) 
   const [editTeacherNotes, setEditTeacherNotes] = useState('');
   const [savingReview, setSavingReview] = useState(false);
 
-  // Active Tab: Analytics vs Student Table
-  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'TABLE'>('OVERVIEW');
+  // Active Tab: Analytics vs Student Table vs Question Bank
+  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'TABLE' | 'QUESTIONS'>('OVERVIEW');
+  const [questionFilter, setQuestionFilter] = useState<'ALL' | 'PG' | 'ESSAY'>('ALL');
 
   // Fetch submissions from API/LocalStorage
   const fetchSubmissions = async () => {
@@ -113,7 +119,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onLogout }) 
     const avgScore = total > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / total) : 0;
     const maxScore = total > 0 ? Math.max(...scores) : 0;
     const minScore = total > 0 ? Math.min(...scores) : 0;
-    const passingCount = submissions.filter((s) => s.totalScore >= 75).length;
+    const passingCount = submissions.filter((s) => s.totalScore >= 78).length;
     const passingRate = total > 0 ? Math.round((passingCount / total) * 100) : 0;
 
     return {
@@ -167,14 +173,14 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onLogout }) 
   const scoreDistribution = useMemo(() => {
     const counts = {
       sangatBaik: 0, // >= 85
-      baik: 0, // 75 - 84
-      cukup: 0, // 65 - 74
+      baik: 0, // 78 - 84
+      cukup: 0, // 65 - 77
       remedial: 0, // < 65
     };
 
     submissions.forEach((s) => {
       if (s.totalScore >= 85) counts.sangatBaik++;
-      else if (s.totalScore >= 75) counts.baik++;
+      else if (s.totalScore >= 78) counts.baik++;
       else if (s.totalScore >= 65) counts.cukup++;
       else counts.remedial++;
     });
@@ -203,6 +209,28 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onLogout }) 
         correctCount,
         totalAnswered,
         percent,
+      };
+    });
+  }, [submissions]);
+
+  // Item Analysis (Rata-rata Skor Tiap Nomor Essay)
+  const essayStats = useMemo(() => {
+    return QUESTIONS_ESSAY.map((essay) => {
+      let totalScore = 0;
+      let count = 0;
+      submissions.forEach((sub) => {
+        if (sub.essayScores && sub.essayScores[essay.id] !== undefined) {
+          totalScore += Number(sub.essayScores[essay.id]) || 0;
+          count++;
+        }
+      });
+      const avg = count > 0 ? (totalScore / count).toFixed(1) : '0';
+      return {
+        id: essay.id,
+        number: essay.number,
+        topic: essay.topic,
+        avg,
+        count,
       };
     });
   }, [submissions]);
@@ -275,7 +303,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onLogout }) 
 
     const rows = filteredSubmissions.map((s, idx) => {
       const grade =
-        s.totalScore >= 90 ? 'A' : s.totalScore >= 80 ? 'B' : s.totalScore >= 75 ? 'C' : 'D';
+        s.totalScore >= 90 ? 'A' : s.totalScore >= 80 ? 'B' : s.totalScore >= 78 ? 'C' : 'D';
       return [
         idx + 1,
         `"${s.student.studentId}"`,
@@ -552,7 +580,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onLogout }) 
 
           <div className="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-4">
             <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider flex items-center justify-between">
-              <span>Tuntas KKM (&ge;75)</span>
+              <span>Tuntas KKM (&ge;78)</span>
               <span className="text-xs font-bold text-emerald-400">{metrics.passingRate}%</span>
             </div>
             <div className="text-2xl sm:text-3xl font-extrabold text-white mt-1">
@@ -587,6 +615,17 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onLogout }) 
             <Users className="w-4 h-4" />
             <span>Tabel Rekapitulasi & Koreksi Siswa ({filteredSubmissions.length})</span>
           </button>
+          <button
+            onClick={() => setActiveTab('QUESTIONS')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+              activeTab === 'QUESTIONS'
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+            }`}
+          >
+            <BookOpen className="w-4 h-4" />
+            <span>Daftar Soal Asesmen (10 PG & 5 Essay)</span>
+          </button>
         </div>
 
         {/* TAB 1: ANALYTICS & CHARTS */}
@@ -606,7 +645,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onLogout }) 
                       Perbandingan performa kelas X Reguler vs X Cambridge
                     </p>
                   </div>
-                  <span className="text-xs text-blue-400 font-semibold">KKM: 75</span>
+                  <span className="text-xs text-blue-400 font-semibold">KKM: 78</span>
                 </div>
 
                 {classAnalytics.length === 0 ? (
@@ -616,7 +655,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onLogout }) 
                 ) : (
                   <div className="space-y-4">
                     {classAnalytics.map((item) => {
-                      const isPassing = item.avg >= 75;
+                      const isPassing = item.avg >= 78;
                       const widthPercent = Math.min(100, Math.max(10, item.avg));
                       return (
                         <div key={item.className} className="space-y-1.5">
@@ -652,11 +691,11 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onLogout }) 
                                   : 'bg-gradient-to-r from-blue-600 to-teal-400'
                               }`}
                             />
-                            {/* KKM vertical marker at 75% */}
+                            {/* KKM vertical marker at 78% */}
                             <div
                               className="absolute top-0 bottom-0 w-0.5 bg-amber-400/80 z-10"
-                              style={{ left: '75%' }}
-                              title="Garis KKM (75)"
+                              style={{ left: '78%' }}
+                              title="Garis KKM (78)"
                             />
                           </div>
                         </div>
@@ -701,7 +740,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onLogout }) 
                         <div className="w-3 h-3 rounded-full bg-blue-400" />
                         <div>
                           <div className="text-xs font-bold text-white">Baik (B)</div>
-                          <div className="text-[10px] text-slate-400">Rentang Skor 75 - 84</div>
+                          <div className="text-[10px] text-slate-400">Rentang Skor 78 - 84</div>
                         </div>
                       </div>
                       <div className="text-right">
@@ -718,7 +757,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onLogout }) 
                         <div className="w-3 h-3 rounded-full bg-amber-400" />
                         <div>
                           <div className="text-xs font-bold text-white">Cukup (C)</div>
-                          <div className="text-[10px] text-slate-400">Rentang Skor 65 - 74</div>
+                          <div className="text-[10px] text-slate-400">Rentang Skor 65 - 77</div>
                         </div>
                       </div>
                       <div className="text-right">
@@ -909,7 +948,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onLogout }) 
                     </tr>
                   ) : (
                     filteredSubmissions.map((sub, idx) => {
-                      const isPassing = sub.totalScore >= 75;
+                      const isPassing = sub.totalScore >= 78;
 
                       return (
                         <tr key={sub.id} className="hover:bg-slate-800/50 transition-colors">
@@ -1017,6 +1056,316 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onLogout }) 
           </div>
         )}
 
+        {/* TAB 3: DAFTAR & BANK SOAL ASESMEN */}
+        {activeTab === 'QUESTIONS' && (
+          <div className="space-y-6 animate-in fade-in duration-200">
+            {/* Header Bank Soal */}
+            <div className="bg-slate-800/90 border border-slate-700/80 rounded-3xl p-6 sm:p-8 shadow-xl">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-5 border-b border-slate-700/80">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-12 h-12 rounded-2xl bg-blue-600/20 border border-blue-500/30 text-blue-400 flex items-center justify-center font-bold text-lg shrink-0">
+                    <BookOpen className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight">
+                      Bank Soal & Kisi-Kisi Asesmen Harian
+                    </h2>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      Informatika SMA Kelas X • Bab 1 Menelusuri Data dan Kebenaran Informasi di Dunia Digital
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="px-3 py-1 rounded-xl bg-blue-500/15 border border-blue-500/30 text-blue-300 text-xs font-semibold">
+                    10 PG (@6 Poin)
+                  </span>
+                  <span className="px-3 py-1 rounded-xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 text-xs font-semibold">
+                    5 Essay (@8 Poin)
+                  </span>
+                  <span className="px-3 py-1 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-bold">
+                    Total: 100 Poin
+                  </span>
+                </div>
+              </div>
+
+              {/* Filter Type Buttons */}
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-5">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setQuestionFilter('ALL')}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                      questionFilter === 'ALL'
+                        ? 'bg-blue-600 border-blue-500 text-white shadow-sm'
+                        : 'bg-slate-900/80 border-slate-700 text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    Semua Soal (15 Butir)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setQuestionFilter('PG')}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                      questionFilter === 'PG'
+                        ? 'bg-blue-600 border-blue-500 text-white shadow-sm'
+                        : 'bg-slate-900/80 border-slate-700 text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    Pilihan Ganda (1 - 10)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setQuestionFilter('ESSAY')}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                      questionFilter === 'ESSAY'
+                        ? 'bg-indigo-600 border-indigo-500 text-white shadow-sm'
+                        : 'bg-slate-900/80 border-slate-700 text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    Uraian / Essay (1 - 5)
+                  </button>
+                </div>
+
+                <div className="text-xs text-slate-400 italic">
+                  *Sumber rujukan materi: Smart Book Informatika 10 Halaman 31, 32, 33, dan 34
+                </div>
+              </div>
+            </div>
+
+            {/* BAGIAN 1: PILIHAN GANDA */}
+            {(questionFilter === 'ALL' || questionFilter === 'PG') && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-blue-500" />
+                    <h3 className="font-bold text-sm text-white uppercase tracking-wider">
+                      Bagian 1: 10 Butir Soal Pilihan Ganda (Skor Maksimal: 60)
+                    </h3>
+                  </div>
+                  <span className="text-xs text-slate-400">Bobot @6 Poin per Soal</span>
+                </div>
+
+                <div className="space-y-5">
+                  {QUESTIONS_PG.map((q) => {
+                    const stats = itemAnalysisPG.find((item) => item.id === q.id);
+                    const percent = stats ? stats.percent : 0;
+                    const correctCount = stats ? stats.correctCount : 0;
+                    const totalCount = stats ? stats.totalAnswered : 0;
+
+                    return (
+                      <div
+                        key={q.id}
+                        className="bg-slate-800/90 border border-slate-700/80 rounded-3xl p-6 shadow-md space-y-4"
+                      >
+                        {/* Question Top Bar */}
+                        <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-700/60">
+                          <div className="flex items-center gap-2.5">
+                            <span className="w-8 h-8 rounded-xl bg-blue-600/20 border border-blue-500/30 text-blue-400 font-black text-xs flex items-center justify-center">
+                              #{q.number}
+                            </span>
+                            <span className="text-xs font-bold text-slate-300">
+                              Topik: <span className="text-blue-400">{q.topic}</span>
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <span className="px-2.5 py-1 rounded-xl bg-slate-900 border border-slate-700 text-amber-400 text-xs font-bold">
+                              Bobot: {q.points} Poin
+                            </span>
+                            <span
+                              className={`px-2.5 py-1 rounded-xl text-xs font-bold border ${
+                                percent >= 75
+                                  ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
+                                  : percent >= 50
+                                  ? 'bg-amber-500/15 border-amber-500/30 text-amber-400'
+                                  : 'bg-red-500/15 border-red-500/30 text-red-400'
+                              }`}
+                              title="Tingkat ketuntasan siswa pada butir soal ini"
+                            >
+                              Daya Serap: {percent}% Siswa Benar ({correctCount}/{totalCount})
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Reading source if available */}
+                        {q.sourceText && (
+                          <div className="p-3.5 rounded-2xl bg-slate-900/90 border-l-4 border-blue-500 text-xs text-slate-300 italic leading-relaxed">
+                            "{q.sourceText}"
+                          </div>
+                        )}
+
+                        {/* Python Code Snippet if present */}
+                        {q.codeSnippet && (
+                          <div className="rounded-2xl overflow-hidden border border-slate-700 bg-slate-950">
+                            <div className="bg-slate-900/90 px-4 py-2 border-b border-slate-800 flex items-center justify-between text-xs text-slate-400">
+                              <div className="flex items-center gap-2">
+                                <Code className="w-4 h-4 text-emerald-400" />
+                                <span className="font-mono font-semibold text-slate-200">
+                                  skrip_scraping_laptop.py
+                                </span>
+                              </div>
+                              <span className="text-[11px] text-slate-500 font-mono">Python 3</span>
+                            </div>
+                            <pre className="p-4 text-xs font-mono text-emerald-300 overflow-x-auto leading-relaxed">
+                              <code>{q.codeSnippet}</code>
+                            </pre>
+                          </div>
+                        )}
+
+                        {/* Question Prompt */}
+                        <h4 className="text-sm font-semibold text-white leading-relaxed">
+                          {q.question}
+                        </h4>
+
+                        {/* Options A - E */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                          {q.options.map((opt) => {
+                            const isKey = opt.key === q.correctAnswer;
+                            return (
+                              <div
+                                key={opt.key}
+                                className={`p-3 rounded-2xl border text-xs flex items-start gap-3 transition-colors ${
+                                  isKey
+                                    ? 'bg-emerald-950/40 border-emerald-500/60 text-white shadow-xs'
+                                    : 'bg-slate-900/70 border-slate-700/60 text-slate-300'
+                                }`}
+                              >
+                                <span
+                                  className={`w-6 h-6 rounded-lg font-bold flex items-center justify-center shrink-0 text-xs ${
+                                    isKey
+                                      ? 'bg-emerald-500 text-slate-950'
+                                      : 'bg-slate-800 text-slate-400'
+                                  }`}
+                                >
+                                  {opt.key}
+                                </span>
+                                <div className="space-y-1 flex-1">
+                                  <p className="leading-relaxed">{opt.text}</p>
+                                  {isKey && (
+                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/30">
+                                      <Check className="w-3 h-3" />
+                                      Kunci Jawaban Resmi
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {/* Official Explanation Box */}
+                        <div className="p-3.5 rounded-2xl bg-blue-950/25 border border-blue-500/20 text-xs text-blue-200 leading-relaxed">
+                          <span className="font-bold text-blue-400 block mb-1">
+                            Pembahasan & Alasan Pedagogis Guru:
+                          </span>
+                          <p>{q.explanation}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* BAGIAN 2: URAIAN / ESSAY */}
+            {(questionFilter === 'ALL' || questionFilter === 'ESSAY') && (
+              <div className="space-y-4 pt-4">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
+                    <h3 className="font-bold text-sm text-white uppercase tracking-wider">
+                      Bagian 2: 5 Butir Soal Uraian / Essay (Skor Maksimal: 40)
+                    </h3>
+                  </div>
+                  <span className="text-xs text-slate-400">Bobot @8 Poin per Soal</span>
+                </div>
+
+                <div className="space-y-5">
+                  {QUESTIONS_ESSAY.map((essay) => {
+                    const stat = essayStats.find((s) => s.id === essay.id);
+                    const avgScore = stat ? stat.avg : '0';
+
+                    return (
+                      <div
+                        key={essay.id}
+                        className="bg-slate-800/90 border border-slate-700/80 rounded-3xl p-6 shadow-md space-y-4"
+                      >
+                        {/* Essay Top Bar */}
+                        <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-700/60">
+                          <div className="flex items-center gap-2.5">
+                            <span className="w-8 h-8 rounded-xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 font-black text-xs flex items-center justify-center">
+                              #{essay.number + 10}
+                            </span>
+                            <span className="text-xs font-bold text-slate-300">
+                              Topik: <span className="text-indigo-400">{essay.topic}</span>
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <span className="px-2.5 py-1 rounded-xl bg-slate-900 border border-slate-700 text-amber-400 text-xs font-bold">
+                              Bobot: {essay.points} Poin
+                            </span>
+                            <span className="px-2.5 py-1 rounded-xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 text-xs font-bold">
+                              Rata-Rata Capaian: {avgScore} / 8 Poin
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Essay Context */}
+                        {essay.context && (
+                          <div className="p-3.5 rounded-2xl bg-slate-900/90 border-l-4 border-indigo-500 text-xs text-slate-300 italic leading-relaxed">
+                            "{essay.context}"
+                          </div>
+                        )}
+
+                        {/* Essay Question */}
+                        <h4 className="text-sm font-semibold text-white leading-relaxed">
+                          {essay.question}
+                        </h4>
+
+                        {/* Model Sample Answer */}
+                        <div className="p-4 rounded-2xl bg-slate-900 border border-slate-700/70 text-xs text-slate-300 space-y-1.5">
+                          <span className="font-bold text-slate-100 flex items-center gap-1.5 text-xs">
+                            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                            Referensi Jawaban Ideal (Model Answer):
+                          </span>
+                          <p className="leading-relaxed text-slate-200">{essay.sampleAnswer}</p>
+                        </div>
+
+                        {/* Semantic Keywords Tag Cloud */}
+                        <div className="p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800 text-xs space-y-2">
+                          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+                            Kata Kunci Penilaian Otomatis Sistem (Keyword Matching):
+                          </span>
+                          <div className="flex flex-wrap gap-1.5">
+                            {essay.keywords.map((kw, i) => (
+                              <span
+                                key={i}
+                                className="px-2.5 py-0.5 rounded-lg bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 font-mono text-[11px]"
+                              >
+                                {kw}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Teacher Rubric Guide */}
+                        <div className="p-3.5 rounded-2xl bg-amber-950/20 border border-amber-500/25 text-xs text-amber-200 leading-relaxed">
+                          <span className="font-bold text-amber-300 block mb-1">
+                            Pedoman & Rubrik Penskoran Guru:
+                          </span>
+                          <p>{essay.rubricGuide}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Printable Official Recap Section (Visible ONLY during print) */}
         <div className="hidden print:block text-black bg-white p-6 font-sans">
           <div className="text-center border-b-2 border-black pb-3 mb-4">
@@ -1057,7 +1406,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onLogout }) 
                   <td className="p-1 border-r border-black text-center font-bold">{s.totalScore}</td>
                   <td className="p-1 border-r border-black text-center">{s.tabViolations}x</td>
                   <td className="p-1 text-center font-bold">
-                    {s.totalScore >= 75 ? 'TUNTAS' : 'REMEDIAL'}
+                    {s.totalScore >= 78 ? 'TUNTAS' : 'REMEDIAL'}
                   </td>
                 </tr>
               ))}

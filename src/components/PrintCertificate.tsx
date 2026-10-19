@@ -7,13 +7,13 @@ interface PrintCertificateProps {
 }
 
 export const PrintCertificate: React.FC<PrintCertificateProps> = ({ submission }) => {
-  const isPassing = submission.totalScore >= 75;
+  const isPassing = submission.totalScore >= 78;
   const gradeLabel =
     submission.totalScore >= 90
       ? 'A (Sangat Baik)'
       : submission.totalScore >= 80
       ? 'B (Baik)'
-      : submission.totalScore >= 75
+      : submission.totalScore >= 78
       ? 'C (Cukup / Tuntas KKM)'
       : 'D (Perlu Bimbingan / Remedial)';
 
